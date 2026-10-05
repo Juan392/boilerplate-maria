@@ -21,6 +21,6 @@ router.patch('/:id/cancelar', cancelarContrato);
 
 // TODO: Bug #1 - POST /contratos returns 404 because this route is missing
 // Fix: add the following line:
-// router.post('/', createContrato);
+router.post('/', createContrato);
 
 module.exports = router;

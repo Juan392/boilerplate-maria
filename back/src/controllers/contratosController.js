@@ -12,12 +12,35 @@ const contratoSchema = Joi.object({
 });
 
 function getContratos(req, res) {
+  //Mi solucion es crear una queary dinamica con arrays
   const page = parseInt(req.query.page) || 1;
   const limit = 10;
   const offset = (page - 1) * limit;
 
-  const total = db.prepare('SELECT COUNT(*) as count FROM contratos').get().count;
-  const contratos = db.prepare('SELECT * FROM contratos ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+  const {status, nombre} = req.query;
+  let query = 'SELECT * FROM contratos';
+  const queryConditions = [];
+  const queryParams = [];
+
+  if (status){
+    queryConditions.push('status = ?');
+    queryParams.push(status);
+  }
+  if (nombre){
+    queryConditions.push('(nombre LIKE ? OR apellidos LIKE ?)');
+    queryParams.push(`%${nombre}%`, `%${nombre}%`);
+  }
+
+  let whereQuery = '';
+  if (queryConditions.length > 0){
+    whereQuery = ' WHERE ' + queryConditions.join(' AND ');
+  }
+  const countSql = `SELECT COUNT(*) as count FROM contratos ${whereQuery}`;
+  const total = db.prepare(countSql).get(...queryParams).count;
+  const sql = `${query} ${whereQuery} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+  const contratos = db.prepare(sql).all(...queryParams, limit, offset);
+  //const total = db.prepare('SELECT COUNT(*) as count FROM contratos').get().count;
+  // const contratos = db.prepare('SELECT * FROM contratos ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
 
   res.json({
     data: contratos,
@@ -42,9 +65,10 @@ function getContrato(req, res) {
   }
 
   // BUG: Unnecessary extra query duplicating data (n+1 problem)
-  const extraData = db.prepare('SELECT * FROM contratos WHERE id = ?').get(id);
 
-  res.json({ ...contrato, _duplicate: extraData });
+  //La solucion es eliminar la linea de extraData(En este caso la comentare para que sea mas sencillo visualizar el error) y eliminar el "_duplicate" del res.json
+
+  res.json({ ...contrato });
 }
 
 function createContrato(req, res) {

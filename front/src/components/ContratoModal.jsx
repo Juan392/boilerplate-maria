@@ -26,16 +26,20 @@ function ContratoModal({ onClose, onSuccess }) {
 
   function validate() {
     const newErrors = {};
+    const today =   new Date().toISOString().split('T')[0]; //Creo y corto la fecha de hoy para hacer una validacion con la fecha de reserva
     if (!form.nombre.trim()) newErrors.nombre = 'El nombre es obligatorio';
     if (!form.apellidos.trim()) newErrors.apellidos = 'Los apellidos son obligatorios';
-    if (!form.telefono.trim()) newErrors.telefono = 'El teléfono es obligatorio';
+    if (!form.telefono.trim()) {newErrors.telefono = 'El teléfono es obligatorio';} else if (!/^\d+$/.test(form.telefono)) { //Agrego la validacion para solo aceptar numeros
+      newErrors.telefono = 'El teléfono debe tener numeros';
+    }
     if (!form.email.trim()) {
       newErrors.email = 'El email es obligatorio';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'El email no es válido';
     }
-    if (!form.fecha_reserva) newErrors.fecha_reserva = 'La fecha de reserva es obligatoria';
-    return newErrors;
+    if (!form.fecha_reserva) {newErrors.fecha_reserva = 'La fecha de reserva es obligatoria';} else if (form.fecha_reserva < today) { //Aqui se ahce la validacion con la fecha de hoy
+    newErrors.fecha_reserva = 'La fecha de reserva no puede ser en el pasado';
+    }
   }
 
   async function handleSubmit(e) {
@@ -44,7 +48,8 @@ function ContratoModal({ onClose, onSuccess }) {
 
     // TODO: Bug #3 - Even when errors exist, the form tries to submit anyway
     // because the condition below is inverted
-    if (Object.keys(newErrors).length === 0) {
+    //La solucion es que si hay errores, haga el return y no siga ejecutandose
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
@@ -57,7 +62,7 @@ function ContratoModal({ onClose, onSuccess }) {
       onSuccess(data);
       // TODO: Bug #1 - Modal doesn't close after successful submit
       // Fix: uncomment the line below
-      // onClose();
+       onClose();
     } catch (err) {
       console.error('Error creating contrato:', err);
       setErrors({ submit: err.response?.data?.error || 'Error al crear el contrato' });
